@@ -1,3 +1,16 @@
+name: Build ISOs
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+env:
+  IMAGE_REGISTRY: ghcr.io/ublue-os
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-iso
+  cancel-in-progress: true
+
 jobs:
   build-iso:
     runs-on: ubuntu-latest
