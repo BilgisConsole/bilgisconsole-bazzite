@@ -120,7 +120,8 @@ jobs:
           mv ${{ steps.build.outputs.iso_path }}/${{ steps.build.outputs.iso_name }}-CHECKSUM ${ISO_UPLOAD_DIR}
           echo "iso-upload-dir=${ISO_UPLOAD_DIR}" >> $GITHUB_OUTPUT
 
-- name: Install rclone
+      # Install rclone and configure Google Drive
+      - name: Install rclone
         run: |
           curl https://rclone.org/install.sh | sudo bash
 
@@ -134,4 +135,4 @@ jobs:
 
       - name: Upload ISO to Google Drive
         run: |
-          rclone copy /mnt/bazzite-stable-amd64.iso google-drive:/Bilgisconsole
+          rclone copy ${{ github.workspace }}/isodownload/${{ steps.build.outputs.iso_name }} google-drive:/Bilgisconsole
