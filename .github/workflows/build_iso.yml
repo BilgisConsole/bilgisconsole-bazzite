@@ -54,11 +54,11 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-- name: Set Image Tag
-  id: generate-tag
-  shell: bash
-  run: |
-    echo "tag=stable" >> $GITHUB_OUTPUT
+      - name: Set Image Tag
+        id: generate-tag
+        shell: bash
+        run: |
+          echo "tag=stable" >> $GITHUB_OUTPUT
 
       - name: Set Flatpaks Directory Shortname
         id: generate-flatpak-dir-shortname
@@ -129,7 +129,6 @@ jobs:
             Otomatik olarak oluşturulmuş ISO dosyaları:
             - ${{ matrix.image_name }}-${{ steps.generate-tag.outputs.tag }}-amd64.iso
             - CHECKSUM dosyası
-
           files: |
             ${{ steps.upload-directory.outputs.iso-upload-dir }}/*.iso
             ${{ steps.upload-directory.outputs.iso-upload-dir }}/*CHECKSUM
