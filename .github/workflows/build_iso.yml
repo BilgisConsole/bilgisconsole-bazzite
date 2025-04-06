@@ -54,15 +54,11 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Set Image Tag
-        id: generate-tag
-        shell: bash
-        run: |
-          TAG="stable"
-          if [[ "${{ github.ref_name }}" == "testing" ]]; then
-              TAG="testing"
-          fi
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+- name: Set Image Tag
+  id: generate-tag
+  shell: bash
+  run: |
+    echo "tag=stable" >> $GITHUB_OUTPUT
 
       - name: Set Flatpaks Directory Shortname
         id: generate-flatpak-dir-shortname
