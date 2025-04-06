@@ -2,9 +2,7 @@ jobs:
   build-iso:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       contents: write
-      packages: read
       packages: write
       id-token: write
 
@@ -125,4 +123,5 @@ jobs:
 
       - name: Upload ISO to Google Drive
         run: |
-          rclone copy ${{ github.workspace }}/isodownload/${{ steps.build.outputs.iso_name }} google-drive:/Bilgisconsole
+          echo "Uploading ISO: ${{ github.workspace }}/isodownload/${{ steps.build.outputs.iso_name }}"
+          rclone copy ${{ github.workspace }}/isodownload/${{ steps.build.outputs.iso_name }} google-drive:/Bilgisconsole/
