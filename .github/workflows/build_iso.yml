@@ -2,8 +2,10 @@ jobs:
   build-iso:
     runs-on: ubuntu-latest
     permissions:
-      contents: read, write
-      packages: read, write
+      contents: read
+      contents: write
+      packages: read
+      packages: write
       id-token: write
 
     strategy:
