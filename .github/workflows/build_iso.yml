@@ -120,17 +120,18 @@ jobs:
           mv ${{ steps.build.outputs.iso_path }}/${{ steps.build.outputs.iso_name }}-CHECKSUM ${ISO_UPLOAD_DIR}
           echo "iso-upload-dir=${ISO_UPLOAD_DIR}" >> $GITHUB_OUTPUT
 
-      - name: Upload ISOs to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.generate-tag.outputs.tag }}
-          name: "BilgişConsole ISO - ${{ steps.generate-tag.outputs.tag }}"
-          body: |
-            Otomatik olarak oluşturulmuş ISO dosyaları:
-            - ${{ matrix.image_name }}-${{ steps.generate-tag.outputs.tag }}-amd64.iso
-            - CHECKSUM dosyası
-          files: |
-            ${{ steps.upload-directory.outputs.iso-upload-dir }}/*.iso
-            ${{ steps.upload-directory.outputs.iso-upload-dir }}/*CHECKSUM
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+- name: Install rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+
+      - name: Configure rclone for Google Drive
+        run: |
+          echo "[google-drive]" > ~/.config/rclone/rclone.conf
+          echo "type = drive" >> ~/.config/rclone/rclone.conf
+          echo "client_id = ${{ secrets.GDRIVE_CLIENT_ID }}" >> ~/.config/rclone/rclone.conf
+          echo "client_secret = ${{ secrets.GDRIVE_CLIENT_SECRET }}" >> ~/.config/rclone/rclone.conf
+          echo "token = ${{ secrets.GDRIVE_ACCESS_TOKEN }}" >> ~/.config/rclone/rclone.conf
+
+      - name: Upload ISO to Google Drive
+        run: |
+          rclone copy /mnt/bazzite-stable-amd64.iso google-drive:/Bilgisconsole
