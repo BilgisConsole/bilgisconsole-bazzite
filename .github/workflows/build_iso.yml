@@ -117,24 +117,29 @@ jobs:
           mv ${{ steps.build.outputs.iso_path }}/${{ steps.build.outputs.iso_name }}-CHECKSUM ${ISO_UPLOAD_DIR}
           echo "iso-upload-dir=${ISO_UPLOAD_DIR}" >> $GITHUB_OUTPUT
 
-      # Install rclone and configure Google Drive
-      - name: Install rclone
+      - name: Compress ISO
+        id: compress-iso
+        shell: bash
         run: |
-          curl https://rclone.org/install.sh | sudo bash
+          ISO_FILE="${{ steps.upload-directory.outputs.iso-upload-dir }}/${{ steps.build.outputs.iso_name }}"
+          xz -z -9 -k "${ISO_FILE}"
+          echo "compressed-iso=${ISO_FILE}.xz" >> $GITHUB_OUTPUT
 
-      - name: Create rclone config directory
+      - name: Install GitHub CLI
         run: |
-          mkdir -p ~/.config/rclone
+          sudo apt update
+          sudo apt install gh -y
 
-      - name: Configure rclone for Google Drive
+      - name: Upload Compressed ISO to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "[google-drive]" > ~/.config/rclone/rclone.conf
-          echo "type = drive" >> ~/.config/rclone/rclone.conf
-          echo "client_id = ${{ secrets.GDRIVE_CLIENT_ID }}" >> ~/.config/rclone/rclone.conf
-          echo "client_secret = ${{ secrets.GDRIVE_CLIENT_SECRET }}" >> ~/.config/rclone/rclone.conf
-          echo "token = ${{ secrets.GDRIVE_ACCESS_TOKEN }}" >> ~/.config/rclone/rclone.conf
+          TAG_NAME=${{ steps.generate-tag.outputs.tag }}
+          RELEASE_NAME="${{ matrix.image_name }}-${TAG_NAME}"
+          COMPRESSED_ISO="${{ steps.compress-iso.outputs.compressed-iso }}"
 
-      - name: Upload ISO to Google Drive
-        run: |
-          echo "Uploading ISO: ${{ github.workspace }}/isodownload/${{ steps.build.outputs.iso_name }}"
-          rclone copy ${{ github.workspace }}/isodownload/${{ steps.build.outputs.iso_name }} google-drive:/Bilgisconsole/
+          # Release varsa atla, yoksa oluştur
+          gh release view "$RELEASE_NAME" || gh release create "$RELEASE_NAME" --title "$RELEASE_NAME" --notes "Automated ISO build for $RELEASE_NAME"
+
+          # Sıkıştırılmış ISO dosyasını release'e yükle
+          gh release upload "$RELEASE_NAME" "$COMPRESSED_ISO" --clobber
