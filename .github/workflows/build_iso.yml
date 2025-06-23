@@ -5,7 +5,7 @@ on:
   workflow_call:
 
 env:
-  IMAGE_REGISTRY: ghcr.io/BilgisConsole
+  IMAGE_REGISTRY: ghcr.io/ublue-os
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-iso
