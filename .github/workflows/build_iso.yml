@@ -107,6 +107,12 @@ jobs:
           additional_templates: '/github/workspace/installer/lorax_templates/remove_root_password_prompt.tmpl /github/workspace/installer/lorax_templates/set_default_user.tmpl'
           repos: '/github/workspace/bazzite.repo /etc/yum.repos.d/fedora.repo /etc/yum.repos.d/fedora-updates.repo'
 
+      - name: Push Container Image to GHCR
+        run: |
+          IMAGE_TAG="${{ steps.registry_case.outputs.lowercase }}/${{ matrix.image_name }}:${{ steps.generate-tag.outputs.tag }}"
+          echo "Pushing image $IMAGE_TAG"
+          docker push "$IMAGE_TAG"
+
       - name: Move ISOs to `isodownload` Directory
         id: upload-directory
         shell: bash
