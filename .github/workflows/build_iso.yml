@@ -5,7 +5,7 @@ on:
   workflow_call:
 
 env:
-  IMAGE_REGISTRY: ghcr.io/ublue-os
+  IMAGE_REGISTRY: ghcr.io/BilgisConsole
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-iso
@@ -120,12 +120,13 @@ jobs:
       - name: Install zstd
         run: sudo apt-get update && sudo apt-get install -y zstd
 
-      - name: Compress ISO with zstd
+      - name: Compress ISO with zstd (ultra)
         id: compress-iso
         shell: bash
         run: |
           ISO_FILE="${{ steps.upload-directory.outputs.iso-upload-dir }}/${{ steps.build.outputs.iso_name }}"
-          zstd -19 --rm "${ISO_FILE}"
+          echo "Compressing ISO with zstd -22 --ultra..."
+          zstd -22 --ultra -T0 --rm "$ISO_FILE"
           echo "compressed-iso=${ISO_FILE}.zst" >> $GITHUB_OUTPUT
 
       - name: Install GitHub CLI
