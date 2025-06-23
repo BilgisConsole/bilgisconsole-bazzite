@@ -1,4 +1,4 @@
-name: Build ISOs
+name: Build BilgişConsole ISO (Artifact Only)
 
 on:
   workflow_dispatch:
@@ -24,27 +24,7 @@ jobs:
       matrix:
         image_name:
           - bazzite
-          - bazzite-nvidia
-          - bazzite-nvidia-open
-          - bazzite-gnome
-          - bazzite-gnome-nvidia
-          - bazzite-gnome-nvidia-open
           - bazzite-deck
-          - bazzite-deck-gnome
-          - bazzite-ally
-          - bazzite-ally-gnome
-          - bazzite-asus
-          - bazzite-gnome-asus
-          - bazzite-asus-nvidia
-          - bazzite-gnome-asus-nvidia
-          - bazzite-asus-nvidia-open
-          - bazzite-gnome-asus-nvidia-open
-          - bazzite-surface
-          - bazzite-gnome-surface
-          - bazzite-surface-nvidia-open
-          - bazzite-gnome-surface-nvidia-open
-          - bazzite-deck-nvidia
-          - bazzite-deck-nvidia-gnome
         major_version: [41]
 
     steps:
@@ -54,11 +34,10 @@ jobs:
       - name: Set Image Tag
         id: generate-tag
         shell: bash
-        run: |
-          echo "tag=stable" >> $GITHUB_OUTPUT
+        run: echo "tag=stable" >> $GITHUB_OUTPUT
 
-      - name: Set Flatpaks Directory Shortname
-        id: generate-flatpak-dir-shortname
+      - name: Set Flatpaks Directory
+        id: generate-flatpak-dir
         shell: bash
         run: |
           FLATPAK_DIR_SHORTNAME="installer/kde_flatpaks"
@@ -73,7 +52,7 @@ jobs:
         with:
           string: ${{ env.IMAGE_REGISTRY }}
 
-      - name: Log in to GitHub Container Registry
+      - name: Login to GHCR
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -81,12 +60,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Bazzite Repo
-        id: setup-bazzite-repo
         shell: bash
         run: |
           curl -Lo ${{ github.workspace }}/bazzite.repo https://copr.fedorainfracloud.org/coprs/bazzite-org/bazzite/repo/fedora-${{ matrix.major_version }}/bazzite-org-bazzite-fedora-${{ matrix.major_version }}.repo
 
-      - name: Build ISOs
+      - name: Build ISO
         uses: jasonn3/build-container-installer@v1.2.4
         id: build
         with:
@@ -101,13 +79,13 @@ jobs:
           iso_name: ${{ matrix.image_name }}-${{ steps.generate-tag.outputs.tag }}-amd64.iso
           enable_cache_dnf: "false"
           enable_cache_skopeo: "false"
-          flatpak_remote_refs_dir: ${{ steps.generate-flatpak-dir-shortname.outputs.flatpak-dir-shortname }}
+          flatpak_remote_refs_dir: ${{ steps.generate-flatpak-dir.outputs.flatpak-dir-shortname }}
           enable_flatpak_dependencies: "false"
           extra_boot_params: ""
           additional_templates: '/github/workspace/installer/lorax_templates/remove_root_password_prompt.tmpl /github/workspace/installer/lorax_templates/set_default_user.tmpl'
           repos: '/github/workspace/bazzite.repo /etc/yum.repos.d/fedora.repo /etc/yum.repos.d/fedora-updates.repo'
 
-      - name: Move ISOs to `isodownload` Directory
+      - name: Move ISO to Folder
         id: upload-directory
         shell: bash
         run: |
@@ -120,27 +98,17 @@ jobs:
       - name: Install zstd
         run: sudo apt-get update && sudo apt-get install -y zstd
 
-      - name: Compress ISO with zstd (ultra)
+      - name: Compress ISO with zstd
         id: compress-iso
         shell: bash
         run: |
           ISO_FILE="${{ steps.upload-directory.outputs.iso-upload-dir }}/${{ steps.build.outputs.iso_name }}"
-          echo "Compressing ISO with zstd -22 --ultra..."
+          echo "Compressing with zstd..."
           zstd -22 --ultra -T0 --rm "$ISO_FILE"
           echo "compressed-iso=${ISO_FILE}.zst" >> $GITHUB_OUTPUT
 
-      - name: Install GitHub CLI
-        run: |
-          sudo apt update
-          sudo apt install gh -y
-
-      - name: Upload Compressed ISO to GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG_NAME=${{ steps.generate-tag.outputs.tag }}
-          RELEASE_NAME="${{ matrix.image_name }}-${TAG_NAME}"
-          COMPRESSED_ISO="${{ steps.compress-iso.outputs.compressed-iso }}"
-
-          gh release view "$RELEASE_NAME" || gh release create "$RELEASE_NAME" --title "$RELEASE_NAME" --notes "Automated ISO build for $RELEASE_NAME"
-          gh release upload "$RELEASE_NAME" "$COMPRESSED_ISO" --clobber
+      - name: Upload ISO Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.image_name }}-${{ steps.generate-tag.outputs.tag }}-iso
+          path: ${{ steps.compress-iso.outputs.compressed-iso }}
